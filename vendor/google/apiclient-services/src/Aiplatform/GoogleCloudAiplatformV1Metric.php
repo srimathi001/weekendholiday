@@ -28,10 +28,14 @@ class GoogleCloudAiplatformV1Metric extends \Google\Collection
   protected $bleuSpecDataType = '';
   protected $exactMatchSpecType = GoogleCloudAiplatformV1ExactMatchSpec::class;
   protected $exactMatchSpecDataType = '';
+  protected $llmBasedMetricSpecType = GoogleCloudAiplatformV1LLMBasedMetricSpec::class;
+  protected $llmBasedMetricSpecDataType = '';
   protected $pairwiseMetricSpecType = GoogleCloudAiplatformV1PairwiseMetricSpec::class;
   protected $pairwiseMetricSpecDataType = '';
   protected $pointwiseMetricSpecType = GoogleCloudAiplatformV1PointwiseMetricSpec::class;
   protected $pointwiseMetricSpecDataType = '';
+  protected $predefinedMetricSpecType = GoogleCloudAiplatformV1PredefinedMetricSpec::class;
+  protected $predefinedMetricSpecDataType = '';
   protected $rougeSpecType = GoogleCloudAiplatformV1RougeSpec::class;
   protected $rougeSpecDataType = '';
 
@@ -78,6 +82,20 @@ class GoogleCloudAiplatformV1Metric extends \Google\Collection
     return $this->exactMatchSpec;
   }
   /**
+   * @param GoogleCloudAiplatformV1LLMBasedMetricSpec
+   */
+  public function setLlmBasedMetricSpec(GoogleCloudAiplatformV1LLMBasedMetricSpec $llmBasedMetricSpec)
+  {
+    $this->llmBasedMetricSpec = $llmBasedMetricSpec;
+  }
+  /**
+   * @return GoogleCloudAiplatformV1LLMBasedMetricSpec
+   */
+  public function getLlmBasedMetricSpec()
+  {
+    return $this->llmBasedMetricSpec;
+  }
+  /**
    * @param GoogleCloudAiplatformV1PairwiseMetricSpec
    */
   public function setPairwiseMetricSpec(GoogleCloudAiplatformV1PairwiseMetricSpec $pairwiseMetricSpec)
@@ -104,6 +122,20 @@ class GoogleCloudAiplatformV1Metric extends \Google\Collection
   public function getPointwiseMetricSpec()
   {
     return $this->pointwiseMetricSpec;
+  }
+  /**
+   * @param GoogleCloudAiplatformV1PredefinedMetricSpec
+   */
+  public function setPredefinedMetricSpec(GoogleCloudAiplatformV1PredefinedMetricSpec $predefinedMetricSpec)
+  {
+    $this->predefinedMetricSpec = $predefinedMetricSpec;
+  }
+  /**
+   * @return GoogleCloudAiplatformV1PredefinedMetricSpec
+   */
+  public function getPredefinedMetricSpec()
+  {
+    return $this->predefinedMetricSpec;
   }
   /**
    * @param GoogleCloudAiplatformV1RougeSpec

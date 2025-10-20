@@ -16,6 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode($response);
         exit;
     }
+    
+    // --- START: NEW, STRICTER VALIDATION ---
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/@(gmail\.com|mail\.com)$/', $email)) {
+        http_response_code(400);
+        $response['status'] = false;
+        $response['message'] = 'Please use a valid gmail.com or mail.com address.';
+        echo json_encode($response);
+        exit;
+    }
+    // --- END: NEW, STRICTER VALIDATION ---
 
     $stmt = $conn->prepare("SELECT id, fullname, email, password FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
@@ -26,7 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_result($id, $fullname, $db_email, $hashedPassword);
         $stmt->fetch();
 
-        // This correctly verifies the password for ANY user, including the admin
         if (password_verify($password, $hashedPassword)) {
             $session_token = bin2hex(random_bytes(32));
             

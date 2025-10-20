@@ -26,6 +26,8 @@ class DatabaseResourceMetadata extends \Google\Collection
   protected $backupConfigurationDataType = '';
   protected $backupRunType = BackupRun::class;
   protected $backupRunDataType = '';
+  protected $backupdrConfigurationType = BackupDRConfiguration::class;
+  protected $backupdrConfigurationDataType = '';
   /**
    * @var string
    */
@@ -60,6 +62,8 @@ class DatabaseResourceMetadata extends \Google\Collection
   public $location;
   protected $machineConfigurationType = MachineConfiguration::class;
   protected $machineConfigurationDataType = '';
+  protected $maintenanceInfoType = ResourceMaintenanceInfo::class;
+  protected $maintenanceInfoDataType = '';
   protected $primaryResourceIdType = DatabaseResourceId::class;
   protected $primaryResourceIdDataType = '';
   /**
@@ -88,6 +92,10 @@ class DatabaseResourceMetadata extends \Google\Collection
   public $updationTime;
   protected $userLabelSetType = UserLabels::class;
   protected $userLabelSetDataType = '';
+  /**
+   * @var string
+   */
+  public $zone;
 
   /**
    * @param AvailabilityConfiguration
@@ -130,6 +138,20 @@ class DatabaseResourceMetadata extends \Google\Collection
   public function getBackupRun()
   {
     return $this->backupRun;
+  }
+  /**
+   * @param BackupDRConfiguration
+   */
+  public function setBackupdrConfiguration(BackupDRConfiguration $backupdrConfiguration)
+  {
+    $this->backupdrConfiguration = $backupdrConfiguration;
+  }
+  /**
+   * @return BackupDRConfiguration
+   */
+  public function getBackupdrConfiguration()
+  {
+    return $this->backupdrConfiguration;
   }
   /**
    * @param string
@@ -286,6 +308,20 @@ class DatabaseResourceMetadata extends \Google\Collection
     return $this->machineConfiguration;
   }
   /**
+   * @param ResourceMaintenanceInfo
+   */
+  public function setMaintenanceInfo(ResourceMaintenanceInfo $maintenanceInfo)
+  {
+    $this->maintenanceInfo = $maintenanceInfo;
+  }
+  /**
+   * @return ResourceMaintenanceInfo
+   */
+  public function getMaintenanceInfo()
+  {
+    return $this->maintenanceInfo;
+  }
+  /**
    * @param DatabaseResourceId
    */
   public function setPrimaryResourceId(DatabaseResourceId $primaryResourceId)
@@ -410,6 +446,20 @@ class DatabaseResourceMetadata extends \Google\Collection
   public function getUserLabelSet()
   {
     return $this->userLabelSet;
+  }
+  /**
+   * @param string
+   */
+  public function setZone($zone)
+  {
+    $this->zone = $zone;
+  }
+  /**
+   * @return string
+   */
+  public function getZone()
+  {
+    return $this->zone;
   }
 }
 

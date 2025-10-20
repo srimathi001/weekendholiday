@@ -1,67 +1,91 @@
 <?php
 include 'config.php';
-// include 'auth.php'; // You would have your user authentication logic here
-
 header('Content-Type: application/json');
-$response = ['status' => false, 'data' => []];
 
-// --- IMPORTANT: Securely Get User ID ---
-if (!isset($_GET['user_id'])) {
-    http_response_code(401);
-    $response['message'] = 'User ID is missing.';
+$response = ['status' => false, 'message' => 'An error occurred.'];
+
+if (!isset($_GET['user_id']) || !isset($_GET['status'])) {
+    http_response_code(400);
+    $response['message'] = 'user_id and status are required.';
     echo json_encode($response);
     exit;
 }
-$userId = (int)$_GET['user_id'];
 
-// Get the requested trip status (e.g., 'upcoming', 'completed', 'cancelled')
-$status = $_GET['status'] ?? 'upcoming';
+$userId = intval($_GET['user_id']);
+$status = strtolower(trim($_GET['status'])); // Ensure status is lowercase
 
 try {
-    // We also need the first image for each place to show in the list
-    // ===============================================================
-    // == UPDATED: MODIFIED SQL QUERY AND BINDING ==
-    // ===============================================================
-    $sql = "";
-    $stmt = null;
-
-    // If the request is for the 'upcoming' tab, we fetch BOTH 'upcoming' and 'in-progress' trips.
-    if ($status === 'upcoming') {
-        $sql = "SELECT 
-                    t.*, 
-                    (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id ORDER BY pi.id ASC LIMIT 1) as place_image
-                FROM trips t 
-                WHERE t.user_id = ? AND (t.status = 'upcoming' OR t.status = 'in-progress')
+    // Determine query based on requested status.
+    if ($status === 'future') {
+        // --- FIX HERE: Include 'active' trips in the 'future' list ---
+        // Get trips starting today or later with status 'future' OR trips with status 'active'.
+        // Exclude finished/cancelled explicitly.
+        $sql = "SELECT t.*, 
+                       (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id LIMIT 1) as place_image
+                FROM trips t
+                WHERE t.user_id = ?
+                  AND (
+                       (LOWER(t.status) = 'future' AND t.start_date >= CURDATE())
+                       OR 
+                       (LOWER(t.status) = 'active') 
+                      )
+                  AND LOWER(t.status) NOT IN ('finished', 'completed', 'cancelled')
                 ORDER BY t.start_date ASC";
-        
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $userId);
-    } else {
-        // For any other status ('cancelled', 'finished'), fetch only that specific status.
-        $sql = "SELECT 
-                    t.*, 
-                    (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id ORDER BY pi.id ASC LIMIT 1) as place_image
-                FROM trips t 
-                WHERE t.user_id = ? AND t.status = ?
+
+    } elseif ($status === 'ongoing' || $status === 'active') { // This specific case might be less needed now
+        // Get only trips explicitly marked as 'active' and within date range
+        $sql = "SELECT t.*, (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id LIMIT 1) as place_image
+                FROM trips t
+                WHERE t.user_id = ?
+                  AND CURDATE() BETWEEN t.start_date AND t.end_date
+                  AND LOWER(t.status) = 'active'
                 ORDER BY t.start_date ASC";
-                
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("is", $userId, $status);
+        $stmt->bind_param("i", $userId);
+
+    } elseif ($status === 'completed' || $status === 'finished') {
+        // Fetch 'finished' status directly
+        $sql = "SELECT t.*, (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id LIMIT 1) as place_image
+                FROM trips t
+                WHERE t.user_id = ?
+                  AND LOWER(t.status) IN ('finished', 'completed')
+                ORDER BY t.end_date DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $userId);
+
+    } elseif ($status === 'cancelled' || $status === 'canceled') {
+        // Fetch 'cancelled' status directly
+        $sql = "SELECT t.*, (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id LIMIT 1) as place_image
+                FROM trips t
+                WHERE t.user_id = ?
+                  AND LOWER(t.status) = 'cancelled'
+                ORDER BY t.start_date DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $userId);
+
+    } else {
+        // Fallback should ideally not be hit if app uses defined statuses
+        http_response_code(400);
+        $response['message'] = 'Invalid status requested.';
+        echo json_encode($response);
+        exit;
     }
-    // ===============================================================
-    // == END OF UPDATE ==
-    // ===============================================================
 
     $stmt->execute();
     $result = $stmt->get_result();
-    
     $trips = [];
     while ($row = $result->fetch_assoc()) {
+        // Add 'is_today' flag
+        $row['is_today'] = ($row['start_date'] == date('Y-m-d'));
+        
+        $row['status'] = strtolower($row['status']); // Ensure status is lowercase
         $trips[] = $row;
     }
+    $stmt->close();
     
-    $response['status'] = true;
-    $response['data'] = $trips;
+    $response = ['status' => true, 'message' => 'Trips fetched.', 'data' => $trips];
     http_response_code(200);
 
 } catch (Exception $e) {

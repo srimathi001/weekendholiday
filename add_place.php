@@ -11,6 +11,7 @@ if (!isset($_POST['placeName']) || empty(trim($_POST['placeName']))) {
 $conn->begin_transaction();
 
 try {
+    // START: *** UPDATED DATA RECEIVING ***
     // Receive data from the app
     $name = trim($_POST['placeName']);
     $location = trim($_POST['placeLocation'] ?? '');
@@ -32,16 +33,33 @@ try {
     $food_low_veg = $_POST['foodLowVeg'] ?? 0;
     $food_low_nonveg = $_POST['foodLowNonVeg'] ?? 0;
     $food_low_combo = $_POST['foodLowCombo'] ?? 0;
-    $flight_example = $_POST['flightExample'] ?? '';
-    $train_example = $_POST['trainExample'] ?? '';
-    $bus_example = $_POST['busExample'] ?? '';
+    
+    // ADDED: New fields
+    $avg_budget = $_POST['avg_budget'] ?? '';
+    $local_language = $_POST['local_language'] ?? '';
+
+    // REMOVED: Unwanted example fields
+    // END: *** UPDATED DATA RECEIVING ***
 
     // 1. INSERT INTO 'places' TABLE
-    $sql_place = "INSERT INTO places (name, location, suitable_months, is_monsoon_destination, latitude, longitude, toll_cost, parking_cost, hotel_high_cost, hotel_std_cost, hotel_low_cost, food_high_veg, food_high_nonveg, food_high_combo, food_std_veg, food_std_nonveg, food_std_combo, food_low_veg, food_low_nonveg, food_low_combo, flight_example, train_example, bus_example) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // START: *** UPDATED SQL QUERY AND BINDING ***
+    // REMOVED flight_example, train_example, bus_example
+    // ADDED avg_budget, local_language
+    $sql_place = "INSERT INTO places (name, location, suitable_months, is_monsoon_destination, latitude, longitude, toll_cost, parking_cost, hotel_high_cost, hotel_std_cost, hotel_low_cost, food_high_veg, food_high_nonveg, food_high_combo, food_std_veg, food_std_nonveg, food_std_combo, food_low_veg, food_low_nonveg, food_low_combo, avg_budget, local_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_place = $conn->prepare($sql_place);
     if ($stmt_place === false) throw new Exception("SQL Prepare Failed (places): " . $conn->error);
     
-    $stmt_place->bind_param("sssidddddddddddddddssss", $name, $location, $suitable_months, $is_monsoon_destination, $latitude, $longitude, $toll_cost, $parking_cost, $hotel_high_cost, $hotel_std_cost, $hotel_low_cost, $food_high_veg, $food_high_nonveg, $food_high_combo, $food_std_veg, $food_std_nonveg, $food_std_combo, $food_low_veg, $food_low_nonveg, $food_low_combo, $flight_example, $train_example, $bus_example);
+    // UPDATED bind_param string to match new columns (16 doubles, then 2 strings)
+    $stmt_place->bind_param("sssiddddddddddddddddss", 
+        $name, $location, $suitable_months, $is_monsoon_destination, 
+        $latitude, $longitude, $toll_cost, $parking_cost, 
+        $hotel_high_cost, $hotel_std_cost, $hotel_low_cost, 
+        $food_high_veg, $food_high_nonveg, $food_high_combo, 
+        $food_std_veg, $food_std_nonveg, $food_std_combo, 
+        $food_low_veg, $food_low_nonveg, $food_low_combo,
+        $avg_budget, $local_language);
+    // END: *** UPDATED SQL QUERY AND BINDING ***
+        
     if (!$stmt_place->execute()) throw new Exception("SQL Execute Failed (places): " . $stmt_place->error);
     $place_id = $conn->insert_id;
     $stmt_place->close();
@@ -50,23 +68,17 @@ try {
     if (isset($_POST['topSpots']) && $place_id > 0) {
         $topSpots = json_decode($_POST['topSpots'], true);
         if (is_array($topSpots)) {
-            // START: *** UPDATED CODE FOR SPOTS ***
-            // Updated SQL to include latitude and longitude
             $sql_spot = "INSERT INTO top_spots (place_id, name, description, latitude, longitude) VALUES (?, ?, ?, ?, ?)";
             $stmt_spot = $conn->prepare($sql_spot);
             foreach ($topSpots as $spot) {
                 if (!empty($spot['name'])) {
-                    // Provide NULL as a default if latitude/longitude are empty
                     $spot_lat = !empty($spot['latitude']) ? (double)$spot['latitude'] : null;
                     $spot_lon = !empty($spot['longitude']) ? (double)$spot['longitude'] : null;
-
-                    // Updated bind_param to include two doubles (d)
                     $stmt_spot->bind_param("issdd", $place_id, $spot['name'], $spot['description'], $spot_lat, $spot_lon);
                     $stmt_spot->execute();
                 }
             }
             $stmt_spot->close();
-            // END: *** UPDATED CODE FOR SPOTS ***
         }
     }
 

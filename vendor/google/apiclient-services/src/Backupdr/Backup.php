@@ -20,6 +20,8 @@ namespace Google\Service\Backupdr;
 class Backup extends \Google\Collection
 {
   protected $collection_key = 'serviceLocks';
+  protected $alloyDbBackupPropertiesType = AlloyDbClusterBackupProperties::class;
+  protected $alloyDbBackupPropertiesDataType = '';
   protected $backupApplianceBackupPropertiesType = BackupApplianceBackupProperties::class;
   protected $backupApplianceBackupPropertiesDataType = '';
   protected $backupApplianceLocksType = BackupLock::class;
@@ -28,6 +30,8 @@ class Backup extends \Google\Collection
    * @var string
    */
   public $backupType;
+  protected $cloudSqlInstanceBackupPropertiesType = CloudSqlInstanceBackupProperties::class;
+  protected $cloudSqlInstanceBackupPropertiesDataType = '';
   protected $computeInstanceBackupPropertiesType = ComputeInstanceBackupProperties::class;
   protected $computeInstanceBackupPropertiesDataType = '';
   /**
@@ -90,6 +94,20 @@ class Backup extends \Google\Collection
   public $updateTime;
 
   /**
+   * @param AlloyDbClusterBackupProperties
+   */
+  public function setAlloyDbBackupProperties(AlloyDbClusterBackupProperties $alloyDbBackupProperties)
+  {
+    $this->alloyDbBackupProperties = $alloyDbBackupProperties;
+  }
+  /**
+   * @return AlloyDbClusterBackupProperties
+   */
+  public function getAlloyDbBackupProperties()
+  {
+    return $this->alloyDbBackupProperties;
+  }
+  /**
    * @param BackupApplianceBackupProperties
    */
   public function setBackupApplianceBackupProperties(BackupApplianceBackupProperties $backupApplianceBackupProperties)
@@ -130,6 +148,20 @@ class Backup extends \Google\Collection
   public function getBackupType()
   {
     return $this->backupType;
+  }
+  /**
+   * @param CloudSqlInstanceBackupProperties
+   */
+  public function setCloudSqlInstanceBackupProperties(CloudSqlInstanceBackupProperties $cloudSqlInstanceBackupProperties)
+  {
+    $this->cloudSqlInstanceBackupProperties = $cloudSqlInstanceBackupProperties;
+  }
+  /**
+   * @return CloudSqlInstanceBackupProperties
+   */
+  public function getCloudSqlInstanceBackupProperties()
+  {
+    return $this->cloudSqlInstanceBackupProperties;
   }
   /**
    * @param ComputeInstanceBackupProperties

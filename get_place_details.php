@@ -14,7 +14,7 @@ if (!isset($_GET['place_id']) || !is_numeric($_GET['place_id'])) {
 $placeId = intval($_GET['place_id']);
 
 try {
-    // 1. Fetch main place details
+    // 1. Fetch main place details from the 'places' table
     $stmt = $conn->prepare("SELECT * FROM places WHERE id = ?");
     $stmt->bind_param("i", $placeId);
     $stmt->execute();
@@ -28,22 +28,20 @@ try {
         exit;
     }
     
-    // 2. Fetch all images
-    $stmt_images = $conn->prepare("SELECT image_url FROM place_images WHERE place_id = ?");
+    // 2. Fetch all related images, including their unique IDs
+    $stmt_images = $conn->prepare("SELECT id, image_url FROM place_images WHERE place_id = ?");
     $stmt_images->bind_param("i", $placeId);
     $stmt_images->execute();
     $images_result = $stmt_images->get_result();
     $images = [];
     while ($row = $images_result->fetch_assoc()) {
-        $images[] = $row['image_url'];
+        $images[] = $row;
     }
     $placeData['images'] = $images;
     $stmt_images->close();
     
-    // 3. Fetch all top spots - INCLUDING LATITUDE AND LONGITUDE
-    // START: *** THIS LINE IS UPDATED ***
-    $stmt_spots = $conn->prepare("SELECT name, description, latitude, longitude FROM top_spots WHERE place_id = ?");
-    // END: *** THIS LINE IS UPDATED ***
+    // 3. Fetch all related top spots, including their unique IDs
+    $stmt_spots = $conn->prepare("SELECT id, name, description, latitude, longitude FROM top_spots WHERE place_id = ?");
     $stmt_spots->bind_param("i", $placeId);
     $stmt_spots->execute();
     $spots_result = $stmt_spots->get_result();
@@ -54,8 +52,8 @@ try {
     $placeData['top_spots'] = $topSpots;
     $stmt_spots->close();
 
-    // 4. Fetch transport options
-    $stmt_transport = $conn->prepare("SELECT icon, type, info FROM transport_options WHERE place_id = ?");
+    // 4. Fetch all related transport options, including their unique IDs
+    $stmt_transport = $conn->prepare("SELECT id, icon, type, info FROM transport_options WHERE place_id = ?");
     $stmt_transport->bind_param("i", $placeId);
     $stmt_transport->execute();
     $transport_result = $stmt_transport->get_result();
@@ -66,7 +64,7 @@ try {
     $placeData['transport_options'] = $transportOptions;
     $stmt_transport->close();
 
-    // 5. Calculate average rating and review count
+    // 5. Calculate average rating and review count from the 'reviews' table
     $review_stmt = $conn->prepare("SELECT AVG(rating) as avg_rating, COUNT(id) as review_count FROM reviews WHERE place_id = ?");
     $review_stmt->bind_param("i", $placeId);
     $review_stmt->execute();
@@ -76,7 +74,7 @@ try {
     $placeData['averageRating'] = $review_result['avg_rating'] ? (float)$review_result['avg_rating'] : 0.0;
     $placeData['reviewCount'] = (int)$review_result['review_count'];
 
-    // This is optional but good practice, ensures numbers are sent as numbers
+    // 6. Ensure numeric fields from the database are correctly typed as numbers in the JSON
     $numeric_fields = ['latitude', 'longitude', 'toll_cost', 'parking_cost', 'hotel_std_cost', 'hotel_high_cost', 'hotel_low_cost', 'food_std_veg', 'food_std_nonveg', 'food_std_combo', 'food_high_veg', 'food_high_nonveg', 'food_high_combo', 'food_low_veg', 'food_low_nonveg', 'food_low_combo'];
     foreach ($numeric_fields as $field) {
         if (isset($placeData[$field])) {
@@ -84,6 +82,7 @@ try {
         }
     }
     
+    // 7. Assemble the final successful response
     $response = ['status' => true, 'data' => $placeData];
     http_response_code(200);
 

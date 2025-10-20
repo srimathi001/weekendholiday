@@ -1,43 +1,46 @@
 <?php
 include 'config.php';
-// include 'auth.php'; 
-
 header('Content-Type: application/json');
-$response = ['status' => false, 'data' => null];
 
-// We expect a trip_id to be passed
-if (!isset($_GET['trip_id']) || !is_numeric($_GET['trip_id'])) {
+$response = ['status' => false, 'message' => 'An error occurred.'];
+
+if (!isset($_GET['trip_id'])) {
     http_response_code(400);
-    $response['message'] = 'A valid trip_id is required.';
+    $response['message'] = 'trip_id is required.';
     echo json_encode($response);
     exit;
 }
 
-$tripId = (int)$_GET['trip_id'];
-
-// --- IMPORTANT: You should also verify the user_id from a secure session ---
-// $userId = get_current_user_id(); // Placeholder for your auth logic
+$tripId = intval($_GET['trip_id']);
 
 try {
-    // We also join to get the first image of the place for the trip
-    $sql = "SELECT 
-                t.*, 
-                (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id ORDER BY pi.id ASC LIMIT 1) as place_image
-            FROM trips t 
-            WHERE t.id = ? 
-            -- AND t.user_id = ? -- You would add this line to ensure a user can only see their own trips
-            LIMIT 1";
-            
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $tripId); // If you add user_id check, it would be "ii", $tripId, $userId
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $trip = $result->fetch_assoc();
-    
+    // 1. Fetch main trip details and the first image of the place
+    $sql_trip = "SELECT 
+                    t.*,
+                    (SELECT pi.image_url FROM place_images pi WHERE pi.place_id = t.place_id LIMIT 1) as place_image
+                 FROM trips t
+                 WHERE t.id = ?";
+    $stmt_trip = $conn->prepare($sql_trip);
+    $stmt_trip->bind_param("i", $tripId);
+    $stmt_trip->execute();
+    $trip = $stmt_trip->get_result()->fetch_assoc();
+    $stmt_trip->close();
+
     if ($trip) {
-        $response['status'] = true;
-        $response['data'] = $trip;
+        // 2. Fetch all itinerary items for this trip
+        $sql_items = "SELECT day_number, item_name, item_type, parent_spot_name FROM itinerary_items WHERE trip_id = ? ORDER BY day_number, id";
+        $stmt_items = $conn->prepare($sql_items);
+        $stmt_items->bind_param("i", $tripId);
+        $stmt_items->execute();
+        $items_result = $stmt_items->get_result();
+        
+        $itinerary = [];
+        while ($item = $items_result->fetch_assoc()) {
+            $itinerary[] = $item;
+        }
+        $trip['itinerary_details'] = $itinerary; // Add itinerary to the trip data
+        
+        $response = ['status' => true, 'message' => 'Trip details fetched.', 'data' => $trip];
         http_response_code(200);
     } else {
         $response['message'] = 'Trip not found.';

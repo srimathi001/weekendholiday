@@ -1,8 +1,8 @@
 <?php
 include 'config.php';
-
 header('Content-Type: application/json');
-$response = ['status' => false, 'message' => 'An unknown error occurred.'];
+
+$response = ['status' => false, 'message' => 'An error occurred.'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -11,51 +11,59 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// In a real app, user ID would come from a secure session/token
 if (!isset($_POST['user_id']) || !isset($_POST['trip_ids_json'])) {
     http_response_code(400);
-    $response['message'] = 'Missing required parameters.';
+    $response['message'] = 'user_id and trip_ids_json are required.';
     echo json_encode($response);
     exit;
 }
 
-$userId = (int)$_POST['user_id'];
+$userId = intval($_POST['user_id']);
 $tripIdsJson = $_POST['trip_ids_json'];
 $tripIds = json_decode($tripIdsJson, true);
 
-if (empty($tripIds) || !is_array($tripIds)) {
+if (!is_array($tripIds) || empty($tripIds)) {
     http_response_code(400);
-    $response['message'] = 'Invalid or empty trip IDs provided.';
+    $response['message'] = 'trip_ids_json must be a non-empty array.';
     echo json_encode($response);
     exit;
 }
 
-// Sanitize all IDs to ensure they are integers
-$sanitizedIds = array_map('intval', $tripIds);
-$placeholders = implode(',', array_fill(0, count($sanitizedIds), '?'));
-$types = str_repeat('i', count($sanitizedIds)); // 'i' for integer
+$conn->begin_transaction();
 
 try {
-    // The IN clause is perfect for deleting multiple rows at once.
-    // We also check the user_id to ensure users can only delete their own trips.
-    $sql = "DELETE FROM trips WHERE user_id = ? AND id IN ($placeholders)";
+    // We must also delete the associated itinerary items to maintain database integrity.
+    // Create placeholders for the IN clause (e.g., ?, ?, ?)
+    $placeholders = implode(',', array_fill(0, count($tripIds), '?'));
+    $types = str_repeat('i', count($tripIds)); // 'i' for each integer ID
+
+    // Delete itinerary items first
+    $sql_items = "DELETE FROM itinerary_items WHERE trip_id IN ($placeholders)";
+    $stmt_items = $conn->prepare($sql_items);
+    $stmt_items->bind_param($types, ...$tripIds);
+    $stmt_items->execute();
+    $stmt_items->close();
+
+    // Now delete the main trips
+    $sql_trips = "DELETE FROM trips WHERE user_id = ? AND id IN ($placeholders)";
+    $stmt_trips = $conn->prepare($sql_trips);
+    // Bind user_id first, then the list of trip IDs
+    $stmt_trips->bind_param("i" . $types, $userId, ...$tripIds);
     
-    $stmt = $conn->prepare($sql);
-    // Bind the user_id first, then all the trip IDs
-    $stmt->bind_param("i" . $types, $userId, ...$sanitizedIds);
-    
-    if ($stmt->execute()) {
-        $response = ['status' => true, 'message' => 'Selected trips deleted successfully.'];
+    if ($stmt_trips->execute()) {
+        $affected_rows = $stmt_trips->affected_rows;
+        $conn->commit();
+        $response = ['status' => true, 'message' => "$affected_rows trip(s) deleted successfully."];
         http_response_code(200);
     } else {
-        $response['message'] = 'Failed to delete trips.';
-        http_response_code(500);
+        throw new Exception("Execute failed: " . $stmt_trips->error);
     }
-    $stmt->close();
+    $stmt_trips->close();
 
 } catch (Exception $e) {
+    $conn->rollback();
     http_response_code(500);
-    $response['message'] = 'Database transaction failed: ' . $e->getMessage();
+    $response['message'] = 'Database delete failed: ' . $e->getMessage();
 }
 
 echo json_encode($response);

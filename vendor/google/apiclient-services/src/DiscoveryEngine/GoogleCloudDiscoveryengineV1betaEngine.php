@@ -20,12 +20,20 @@ namespace Google\Service\DiscoveryEngine;
 class GoogleCloudDiscoveryengineV1betaEngine extends \Google\Collection
 {
   protected $collection_key = 'dataStoreIds';
+  /**
+   * @var string
+   */
+  public $appType;
   protected $chatEngineConfigType = GoogleCloudDiscoveryengineV1betaEngineChatEngineConfig::class;
   protected $chatEngineConfigDataType = '';
   protected $chatEngineMetadataType = GoogleCloudDiscoveryengineV1betaEngineChatEngineMetadata::class;
   protected $chatEngineMetadataDataType = '';
   protected $commonConfigType = GoogleCloudDiscoveryengineV1betaEngineCommonConfig::class;
   protected $commonConfigDataType = '';
+  /**
+   * @var string
+   */
+  public $configurableBillingApproach;
   /**
    * @var string
    */
@@ -68,6 +76,20 @@ class GoogleCloudDiscoveryengineV1betaEngine extends \Google\Collection
   public $updateTime;
 
   /**
+   * @param string
+   */
+  public function setAppType($appType)
+  {
+    $this->appType = $appType;
+  }
+  /**
+   * @return string
+   */
+  public function getAppType()
+  {
+    return $this->appType;
+  }
+  /**
    * @param GoogleCloudDiscoveryengineV1betaEngineChatEngineConfig
    */
   public function setChatEngineConfig(GoogleCloudDiscoveryengineV1betaEngineChatEngineConfig $chatEngineConfig)
@@ -108,6 +130,20 @@ class GoogleCloudDiscoveryengineV1betaEngine extends \Google\Collection
   public function getCommonConfig()
   {
     return $this->commonConfig;
+  }
+  /**
+   * @param string
+   */
+  public function setConfigurableBillingApproach($configurableBillingApproach)
+  {
+    $this->configurableBillingApproach = $configurableBillingApproach;
+  }
+  /**
+   * @return string
+   */
+  public function getConfigurableBillingApproach()
+  {
+    return $this->configurableBillingApproach;
   }
   /**
    * @param string

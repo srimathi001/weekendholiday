@@ -36,16 +36,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updateStmt->bind_param("sss", $otp, $otp_expires_at, $email);
         $updateStmt->execute();
 
+    
         // Send the OTP email using PHPMailer
         $mail = new PHPMailer(true);
         try {
             // --- IMPORTANT: CONFIGURE YOUR EMAIL SERVER SETTINGS HERE ---
+            // Server settings (Enable verbose debug output for more info)
+            // $mail->SMTPDebug = \PHPMailer\PHPMailer\SMTP::DEBUG_SERVER; // Uncomment for detailed logs
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com'; // Your SMTP host (e.g., Gmail)
             $mail->SMTPAuth   = true;
             $mail->Username   = 'srimathisivan09@gmail.com'; // Your full Gmail address
-            $mail->Password   = 'vmjj knbc bcab fqku';    // Your Gmail "App Password"
+            $mail->Password   = 'xgoc tiqj msfa denp'; // Paste your App Password here
+
+            // --- THIS IS THE CORRECTED LINE ---
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            
             $mail->Port       = 465;
 
             // Recipients
@@ -59,8 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mail->send();
             $response = ['status' => true, 'message' => 'An OTP has been sent to your email.'];
+
         } catch (Exception $e) {
-            $response = ['status' => false, 'message' => "OTP could not be sent. Mailer Error: {$mail->ErrorInfo}"];
+            // --- START: UPDATED CATCH BLOCK ---
+            http_response_code(500); // Internal Server Error
+            // Log the detailed error message from PHPMailer
+            $detailed_error = "Mailer Error: " . $mail->ErrorInfo . " | PHP Exception: " . $e->getMessage();
+            error_log($detailed_error); // Log to PHP error log
+            $response = ['status' => false, 'message' => "OTP could not be sent. Error: " . $detailed_error];
+            // --- END: UPDATED CATCH BLOCK ---
         }
     } else {
         $response = ['status' => false, 'message' => 'Email not found in our records.'];
